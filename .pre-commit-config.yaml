@@ -19,3 +19,15 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-added-large-files
         args: ["--maxkb=500"]
+  # - repo: local
+  #   hooks:
+  #     - id: stylua
+  #       name: stylua
+  #       entry: stylua
+  #       language: system
+  #       types: [lua]
+  #       pass_filenames: true
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: 3701d2cb65198ec748d3a593628625be9f91fe27  # frozen: v2.3.1
+    hooks:
+      - id: stylua-github
