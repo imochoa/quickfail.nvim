@@ -163,6 +163,14 @@ end
 ---@type Config
 M.config = {
   menu = {
+    { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
+    { cmd = { "%" }, title = "Execute", desc = "Test!" },
+    { cmd = { "echo", "%:p" }, title = "dirshow", desc = "Test!" },
+    { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
+    -- # --debug
+    -- # --verbose
+    -- # --write-to ./out
+    -- nix repl --verbose --debug --debugger --file ./example.nix
     { cmd = { "cat", "%" }, title = "cat", desc = "Test!" },
     { cmd = { "python", "%" }, title = "python", desc = "Run python file" },
     { cmd = { "just", "%" }, title = "just", desc = "Run Just recipe" },
