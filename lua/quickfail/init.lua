@@ -1,7 +1,6 @@
 local M = {}
 
 ---@require "quickfail.types"
--- local logic = require("quickfail.logic")
 
 -- Private vars & fcns
 
