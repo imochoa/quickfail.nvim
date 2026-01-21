@@ -26,8 +26,44 @@ local expand_cmd = function(cmd)
   return exp_str
 end
 
+---See if the bufnr is loaded and valid
+---@param bufnr integer?
+---@returns boolean
+local check_buffer = function(bufnr)
+  if bufnr == nil then
+    return false
+  end
+  -- buffer object still exists (hasn't been wiped).
+  -- buffer is loaded in memory
+  return vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr)
+end
+
+------@return nil
+------@param job Job
+---local rm_job = function(job)
+---  vim.api.nvim_del_autocmd(job.autocmd_id)
+---  -- remove from table!
+---end
+
 ---@type Job[] cache of active jobs
 M.jobs = {}
+
+---Remove invalid jobs
+---@returns nil
+M.check_jobs = function()
+  for i = #M.jobs, 1, -1 do
+    local job = M.jobs[i]
+    if not check_buffer(job.buffer) then
+      vim.notify("Job buffer invalid, removing job", vim.log.levels.WARN, {})
+      if job.autocmd_id then
+        vim.api.nvim_del_autocmd(job.autocmd_id)
+      end
+      -- remove from jobs
+      table.remove(M.jobs, i)
+      --
+    end
+  end
+end
 
 ---@param entry Entry
 ---@returns nil
@@ -82,7 +118,11 @@ M.quickfail = function(entry)
   vim.api.nvim_win_set_cursor(prev_window, prev_cursor)
 
   job.callback = function()
-    vim.api.nvim_chan_send(job.chan, "clear\n( " .. expand_cmd(entry.cmd) .. " )\n")
+    if not check_buffer(job.buffer) then
+      -- TODO:remove job from M.jobs
+      return
+    end
+    vim.print(entry.cmd)
     local cmd_str = expand_cmd(entry.cmd)
     if job.entry.subshell or false then
       cmd_str = "( " .. cmd_str .. " )"
@@ -93,6 +133,10 @@ M.quickfail = function(entry)
   -- Escape to close the terminal split
   vim.keymap.set("n", "<Esc>", function()
     vim.api.nvim_buf_delete(job.buffer, { force = true })
+    -- TODO: remove job as well
+    if job.autocmd_id then
+      vim.api.nvim_del_autocmd(job.autocmd_id)
+    end
   end, { buffer = job.buffer })
 
   if (entry.keycodes or "") ~= "" then
