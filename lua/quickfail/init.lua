@@ -82,6 +82,9 @@ M.quickfail = function(entry)
     entry.pattern = DefaultEntry.pattern
   end
 
+  -- nil check?
+  entry.subshell = entry.subshell or DefaultEntry.subshell
+
   vim.notify(
     string.format("Will \n\tRunning:%s\n\ton Saving %s\n\tor pressing %s", entry.cmd, entry.pattern, entry.keycodes),
     vim.log.levels.INFO,
