@@ -12,7 +12,12 @@ local CMDS = {
   manual = "QuickFailManual",
 }
 ---@type Entry
-local DefaultEntry = { cmd = {}, pattern = "*", keycodes = nil }
+local DefaultEntry = {
+  cmd = {},
+  pattern = "*",
+  keycodes = nil,
+  subshell = true,
+}
 local Augroup = vim.api.nvim_create_augroup("quickfail-group", { clear = true })
 
 --- Expand special symbols ~, %, %:p AND env vars!
@@ -212,7 +217,8 @@ end
 M.config = {
   menu = {
     { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
-    { cmd = { "%" }, title = "Execute", desc = "Test!" },
+    { cmd = { "%:p" }, title = "Execute", desc = "Test!" },
+    { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" },
     { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" },
     -- h: filename-modifiers
     -- % filename
