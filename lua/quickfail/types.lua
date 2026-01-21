@@ -22,6 +22,7 @@
 ---@field pattern string?
 ---@field title string?
 ---@field desc string?
+---@field subshell boolean?
 ---@field opts JobStartOpts?
 
 ---@class (exact) Job More info with 'help: highlight', 'help: highlight-args'

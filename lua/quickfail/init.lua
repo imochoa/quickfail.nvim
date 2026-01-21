@@ -84,6 +84,11 @@ M.quickfail = function(entry)
 
   job.callback = function()
     vim.api.nvim_chan_send(job.chan, "clear\n( " .. expand_cmd(entry.cmd) .. " )\n")
+    local cmd_str = expand_cmd(entry.cmd)
+    if job.entry.subshell or false then
+      cmd_str = "( " .. cmd_str .. " )"
+    end
+    vim.api.nvim_chan_send(job.chan, "clear\n" .. cmd_str .. "\n")
   end
 
   -- Escape to close the terminal split
