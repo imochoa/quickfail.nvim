@@ -16,7 +16,7 @@ local CMDS = {
 local DefaultEntry = { cmd = {}, pattern = "*", keycodes = nil }
 local Augroup = vim.api.nvim_create_augroup("quickfail-group", { clear = true })
 
---- Expand special symbols ~, %, %:p
+--- Expand special symbols ~, %, %:p AND env vars!
 ---@param cmd string[]
 ---@returns string
 local expand_cmd = function(cmd)
@@ -170,7 +170,19 @@ M.config = {
   menu = {
     { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
     { cmd = { "%" }, title = "Execute", desc = "Test!" },
-    { cmd = { "echo", "%:p" }, title = "dirshow", desc = "Test!" },
+    { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" },
+    -- h: filename-modifiers
+    -- % filename
+    -- %< filename without extension
+    -- %:p full path
+    -- %:. relative path
+    -- %:~ path from home
+    -- %:h head (parent directory)
+    -- %:h:h head head (grand-parent directory)
+    -- %:h tail (filename)
+    -- %:h tail (filename)
+    { cmd = { "echo", "$HOME" }, title = "Env vars work", desc = "Test!" },
+    { cmd = { "echo", "%:p:h" }, title = "Absolute Path", desc = "Test!" },
     { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
     -- # --debug
     -- # --verbose
