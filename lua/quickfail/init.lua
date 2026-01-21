@@ -14,7 +14,7 @@ local CMDS = {
 }
 ---@type Entry
 local DefaultEntry = { cmd = {}, pattern = "*", keycodes = nil }
-local Augroup_name = "quickfail-group"
+local Augroup = vim.api.nvim_create_augroup("quickfail-group", { clear = true })
 
 --- Expand special symbols ~, %, %:p
 ---@param cmd string[]
@@ -105,7 +105,7 @@ M.quickfail = function(entry)
 
   if (entry.pattern or "") ~= "" then
     job.autocmd_id = vim.api.nvim_create_autocmd("BufWritePost", {
-      group = vim.api.nvim_create_augroup(Augroup_name, { clear = true }),
+      group = Augroup,
       pattern = entry.pattern,
       callback = job.callback,
     })
