@@ -27,6 +27,7 @@ end
 ---@type Config
 M.plugin_defaults = {
   menu = {
+    { cmd = { "pre-commit", "run", "-a" }, title = "pre-commit", desc = "Test!" },
     { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
     { cmd = { "%:p" }, title = "Execute", desc = "Test!" },
     { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" },
