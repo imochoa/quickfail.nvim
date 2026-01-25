@@ -6,22 +6,20 @@ local utils = require("quickfail.utils")
 ---You will need to call expand_cmd/vim.fn.expand yourself
 ---@returns string[]
 local mk_cmd = function()
-  return table.concat({
-    { "echo", "word!", "&&" },
-    utils.expand_cmd({ "echo", "%:p" }),
-  })
+  local cmd = { "echo", "word!" }
+  utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
+  return cmd
 end
 
 ---You will need to call expand_cmd yourself
 ---@returns string[]
 local quadlet_iterate = function()
   local service_name = vim.fn.expand("%:t:r") .. ".service"
-  -- │ {"systemctl" ,"--user","restart", service_name, "&&"}..│ {"journalctl", "--user", "-xeu",service_name }
-  return table.concat({
-    { "systemctl", "--user", "daemon-reload" },
-    { "&&", "systemctl", "--user", "restart", service_name },
-    { "&&", "journalctl", "--user", "-xeu", service_name },
-  })
+
+  local cmd = { "systemctl", "--user", "daemon-reload" }
+  utils.table_append(cmd, { "&&", "systemctl", "--user", "restart", service_name })
+  utils.table_append(cmd, { "&&", "journalctl", "--user", "-xeu", service_name })
+  return cmd
 end
 
 ---@type Config

@@ -86,11 +86,16 @@ M.quickfail = function(entry)
     end
 
     ---@type string[]
-    local cmd_str = {}
+    local cmd = {}
     if type(entry.cmd) == "function" then
-      cmd_str = entry.cmd()
+      cmd = entry.cmd()
     else
-      cmd_str = utils.expand_cmd(entry.cmd)
+      cmd = utils.expand_cmd(entry.cmd)
+    end
+
+    local cmd_str = ""
+    for _, c in ipairs(cmd) do
+      cmd_str = cmd_str .. vim.fn.expand(c) .. " "
     end
 
     vim.print(entry.cmd)
