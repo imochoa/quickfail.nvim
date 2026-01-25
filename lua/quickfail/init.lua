@@ -1,6 +1,7 @@
 local M = {}
 
 ---@require "quickfail.types"
+local utils = require("quickfail.utils")
 
 -- Private vars & fcns
 
@@ -12,29 +13,6 @@ local CMDS = {
   manual = "QuickFailManual",
 }
 local Augroup = vim.api.nvim_create_augroup("quickfail-group", { clear = true })
-
---- Expand special symbols ~, %, %:p AND env vars!
----@param cmd string[]
----@returns string
-local expand_cmd = function(cmd)
-  local exp_str = ""
-  for _, c in ipairs(cmd) do
-    exp_str = exp_str .. vim.fn.expand(c) .. " "
-  end
-  return exp_str
-end
-
----See if the bufnr is loaded and valid
----@param bufnr integer?
----@returns boolean
-local check_buffer = function(bufnr)
-  if bufnr == nil then
-    return false
-  end
-  -- buffer object still exists (hasn't been wiped).
-  -- buffer is loaded in memory
-  return vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr)
-end
 
 ------@return nil
 ------@param job Job
@@ -51,7 +29,7 @@ M.jobs = {}
 M.check_jobs = function()
   for i = #M.jobs, 1, -1 do
     local job = M.jobs[i]
-    if not check_buffer(job.buffer) then
+    if not utils.check_buffer(job.buffer) then
       vim.notify("Job buffer invalid, removing job", vim.log.levels.WARN, {})
       if job.autocmd_id then
         vim.api.nvim_del_autocmd(job.autocmd_id)
@@ -119,20 +97,21 @@ M.quickfail = function(entry)
   vim.api.nvim_win_set_cursor(prev_window, prev_cursor)
 
   job.callback = function()
-    if not check_buffer(job.buffer) then
+    if not utils.check_buffer(job.buffer) then
       -- TODO:remove job from M.jobs
       return
     end
 
-    local cmd_str = ""
+    ---@type string[]
+    local cmd_str = {}
     if type(entry.cmd) == "function" then
       cmd_str = entry.cmd()
     else
-      cmd_str = expand_cmd(entry.cmd)
+      cmd_str = utils.expand_cmd(entry.cmd)
     end
 
     vim.print(entry.cmd)
-    -- local cmd_str = expand_cmd(entry.cmd)
+    -- local cmd_str = utils.expand_cmd(entry.cmd)
     if job.entry.subshell or false then
       cmd_str = "( " .. cmd_str .. " )"
     end
@@ -221,7 +200,7 @@ end
 local mk_cmd = function()
   return table.concat({
     { "echo", "word!", "&&" },
-    expand_cmd({ "echo", "%:p" }),
+    utils.expand_cmd({ "echo", "%:p" }),
   })
 end
 
