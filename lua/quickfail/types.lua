@@ -35,6 +35,6 @@
 
 ---@class (exact) Config
 ---@field menu Entry[]
----@field entry_defaults Entry
+---@field defaults Entry
 
 ---@alias uint8 number (0-255) integers

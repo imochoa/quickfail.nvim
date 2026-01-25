@@ -2,24 +2,9 @@ local M = {}
 
 ---@require "quickfail.types"
 local utils = require("quickfail.utils")
+local constants = require("quickfail.constants")
 
 -- Private vars & fcns
-
----@enum user_commands
-local CMDS = {
-  reload = "QuickFailReload",
-  quit = "QuickFailQuit",
-  select = "QuickFailSelect",
-  manual = "QuickFailManual",
-}
-local Augroup = vim.api.nvim_create_augroup("quickfail-group", { clear = true })
-
-------@return nil
-------@param job Job
----local rm_job = function(job)
----  vim.api.nvim_del_autocmd(job.autocmd_id)
----  -- remove from table!
----end
 
 ---@type Job[] cache of active jobs
 M.jobs = {}
@@ -83,8 +68,6 @@ M.quickfail = function(entry)
     }),
   }
 
-  -- vim.notify(Job, vim.log.levels.DEBUG, {})
-
   -- leave Terminal-Job mode (like <C-\><C-n>)
   vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-\\><C-n>", true, false, true), "n", true)
 
@@ -118,6 +101,8 @@ M.quickfail = function(entry)
     vim.api.nvim_chan_send(job.chan, "clear\n" .. cmd_str .. "\n")
   end
 
+  -- TODO: add oneshot jobs
+
   -- Escape to close the terminal split
   vim.keymap.set("n", "<q>", function()
     vim.api.nvim_buf_delete(job.buffer, { force = true })
@@ -136,7 +121,7 @@ M.quickfail = function(entry)
 
   if (entry.pattern or "") ~= "" then
     job.autocmd_id = vim.api.nvim_create_autocmd("BufWritePost", {
-      group = Augroup,
+      group = constants.Augroup,
       pattern = entry.pattern,
       callback = job.callback,
     })
@@ -195,91 +180,30 @@ function M.quit()
   end
 end
 
----You will need to call expand_cmd/vim.fn.expand yourself
----@returns string[]
-local mk_cmd = function()
-  return table.concat({
-    { "echo", "word!", "&&" },
-    utils.expand_cmd({ "echo", "%:p" }),
-  })
-end
-
----You will need to call expand_cmd yourself
----@returns string[]
-local quadlet_iterate = function()
-  local service_name = vim.fn.expand("%:t:r") .. ".service"
-  -- │ {"systemctl" ,"--user","restart", service_name, "&&"}..│ {"journalctl", "--user", "-xeu",service_name }
-  return table.concat({
-    { "systemctl", "--user", "daemon-reload" },
-    { "&&", "systemctl", "--user", "restart", service_name },
-    { "&&", "journalctl", "--user", "-xeu", service_name },
-  })
-end
-
 --- Initial (Default) configuration
 ---@type Config
 M.config = {}
-
----@type Config
-local _plugin_defaults = {
-  menu = {
-    { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
-    { cmd = { "%:p" }, title = "Execute", desc = "Test!" },
-    { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" },
-    { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" },
-    { cmd = { "echo", "%:p:r" }, title = "No Ext", desc = "Test!" },
-    { cmd = { "echo", "%:p:r", ";", "echo", "second" }, title = "multi-cmd", desc = "Test!" },
-    { cmd = mk_cmd, title = "function test", desc = "Test!" },
-    { cmd = quadlet_iterate, title = "Quadlet", desc = "Test!" },
-    -- h: filename-modifiers
-    -- % filename
-    -- %< filename without extension
-    -- %:p full path
-    -- %:. relative path
-    -- %:~ path from home
-    -- %:h head (parent directory)
-    -- %:h:h head head (grand-parent directory)
-    -- %:h tail (filename)
-    -- %:h tail (filename)
-    { cmd = { "echo", "$HOME" }, title = "Env vars work", desc = "Test!" },
-    { cmd = { "echo", "%:p:h" }, title = "Absolute Path", desc = "Test!" },
-    { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
-    -- # --debug
-    -- # --verbose
-    -- # --write-to ./out
-    -- nix repl --verbose --debug --debugger --file ./example.nix
-    { cmd = { "cat", "%" }, title = "cat", desc = "Test!" },
-    { cmd = { "python", "%" }, title = "python", desc = "Run python file" },
-    { cmd = { "just", "%" }, title = "just", desc = "Run Just recipe" },
-  },
-  defaults = {
-    cmd = {},
-    pattern = "*",
-    keycodes = nil,
-    subshell = true,
-  },
-}
 
 --- Setup function that users call
 ---@param user_config Config?
 ---@return nil
 function M.setup(user_config)
-  M.config = vim.tbl_deep_extend("force", M.config, _plugin_defaults, user_config or {})
+  user_config = user_config or {}
+  M.config = vim.tbl_deep_extend("force", constants.plugin_defaults, user_config)
 
-  vim.api.nvim_create_user_command(CMDS.quit, M.quit, { desc = "Stop Active QuickFail jobs" })
-  vim.api.nvim_create_user_command(CMDS.reload, function()
-    -- Easy Reloading
+  vim.api.nvim_create_user_command(constants.CMDS.quit, M.quit, { desc = "Stop Active QuickFail jobs" })
+  vim.api.nvim_create_user_command(constants.CMDS.reload, function()
     package.loaded["quickfail"] = nil
     require("quickfail").setup()
   end, { desc = "Reload QuickFail plugin" })
 
   --- use like `vim.cmd[[QuickFailCustom]]`
-  vim.api.nvim_create_user_command(CMDS.manual, M.manual, {
+  vim.api.nvim_create_user_command(constants.CMDS.manual, M.manual, {
     desc = "Rerun everything",
     nargs = "*",
   })
 
-  vim.api.nvim_create_user_command(CMDS.select, M.select, {
+  vim.api.nvim_create_user_command(constants.CMDS.select, M.select, {
     desc = "Choose from some options",
   })
 end
