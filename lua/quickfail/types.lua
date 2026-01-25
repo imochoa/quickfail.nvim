@@ -17,7 +17,7 @@
 --- @field term boolean?
 
 ---@class (exact) Entry
----@field cmd string[] command to run
+---@field cmd string[] | fun():string[] command to run
 ---@field keycodes string?
 ---@field pattern string?
 ---@field title string?
@@ -35,5 +35,6 @@
 
 ---@class (exact) Config
 ---@field menu Entry[]
+---@field entry_defaults Entry
 
 ---@alias uint8 number (0-255) integers

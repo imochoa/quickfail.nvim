@@ -11,13 +11,6 @@ local CMDS = {
   select = "QuickFailSelect",
   manual = "QuickFailManual",
 }
----@type Entry
-local DefaultEntry = {
-  cmd = {},
-  pattern = "*",
-  keycodes = nil,
-  subshell = true,
-}
 local Augroup = vim.api.nvim_create_augroup("quickfail-group", { clear = true })
 
 --- Expand special symbols ~, %, %:p AND env vars!
@@ -73,17 +66,17 @@ end
 ---@param entry Entry
 ---@returns nil
 M.quickfail = function(entry)
-  if #entry.cmd == 0 then
+  if type(entry.cmd) ~= "function" and #entry.cmd == 0 then
     vim.notify("Command is required!", vim.log.levels.ERROR, {})
     return
   end
 
   if (entry.pattern or "") == "" then
-    entry.pattern = DefaultEntry.pattern
+    entry.pattern = M.config.defaults.pattern
   end
 
   -- nil check?
-  entry.subshell = entry.subshell or DefaultEntry.subshell
+  entry.subshell = entry.subshell or M.config.defaults.subshell
 
   vim.notify(
     string.format("Will \n\tRunning:%s\n\ton Saving %s\n\tor pressing %s", entry.cmd, entry.pattern, entry.keycodes),
@@ -130,8 +123,16 @@ M.quickfail = function(entry)
       -- TODO:remove job from M.jobs
       return
     end
+
+    local cmd_str = ""
+    if type(entry.cmd) == "function" then
+      cmd_str = entry.cmd()
+    else
+      cmd_str = expand_cmd(entry.cmd)
+    end
+
     vim.print(entry.cmd)
-    local cmd_str = expand_cmd(entry.cmd)
+    -- local cmd_str = expand_cmd(entry.cmd)
     if job.entry.subshell or false then
       cmd_str = "( " .. cmd_str .. " )"
     end
@@ -139,7 +140,7 @@ M.quickfail = function(entry)
   end
 
   -- Escape to close the terminal split
-  vim.keymap.set("n", "<Esc>", function()
+  vim.keymap.set("n", "<q>", function()
     vim.api.nvim_buf_delete(job.buffer, { force = true })
     -- TODO: remove job as well
     if job.autocmd_id then
@@ -215,14 +216,42 @@ function M.quit()
   end
 end
 
+---You will need to call expand_cmd/vim.fn.expand yourself
+---@returns string[]
+local mk_cmd = function()
+  return table.concat({
+    { "echo", "word!", "&&" },
+    expand_cmd({ "echo", "%:p" }),
+  })
+end
+
+---You will need to call expand_cmd yourself
+---@returns string[]
+local quadlet_iterate = function()
+  local service_name = vim.fn.expand("%:t:r") .. ".service"
+  -- │ {"systemctl" ,"--user","restart", service_name, "&&"}..│ {"journalctl", "--user", "-xeu",service_name }
+  return table.concat({
+    { "systemctl", "--user", "daemon-reload" },
+    { "&&", "systemctl", "--user", "restart", service_name },
+    { "&&", "journalctl", "--user", "-xeu", service_name },
+  })
+end
+
 --- Initial (Default) configuration
 ---@type Config
-M.config = {
+M.config = {}
+
+---@type Config
+local _plugin_defaults = {
   menu = {
     { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
     { cmd = { "%:p" }, title = "Execute", desc = "Test!" },
     { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" },
     { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" },
+    { cmd = { "echo", "%:p:r" }, title = "No Ext", desc = "Test!" },
+    { cmd = { "echo", "%:p:r", ";", "echo", "second" }, title = "multi-cmd", desc = "Test!" },
+    { cmd = mk_cmd, title = "function test", desc = "Test!" },
+    { cmd = quadlet_iterate, title = "Quadlet", desc = "Test!" },
     -- h: filename-modifiers
     -- % filename
     -- %< filename without extension
@@ -244,13 +273,19 @@ M.config = {
     { cmd = { "python", "%" }, title = "python", desc = "Run python file" },
     { cmd = { "just", "%" }, title = "just", desc = "Run Just recipe" },
   },
+  defaults = {
+    cmd = {},
+    pattern = "*",
+    keycodes = nil,
+    subshell = true,
+  },
 }
 
 --- Setup function that users call
 ---@param user_config Config?
 ---@return nil
 function M.setup(user_config)
-  M.config = vim.tbl_deep_extend("force", M.config, user_config or {})
+  M.config = vim.tbl_deep_extend("force", M.config, _plugin_defaults, user_config or {})
 
   vim.api.nvim_create_user_command(CMDS.quit, M.quit, { desc = "Stop Active QuickFail jobs" })
   vim.api.nvim_create_user_command(CMDS.reload, function()
