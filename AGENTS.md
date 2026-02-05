@@ -1,0 +1,277 @@
+# Agent Guidelines for quickfail.nvim
+
+This document provides coding agents with essential information about the quickfail.nvim project structure, conventions, and commands.
+
+## Project Overview
+
+QuickFail.nvim is a Neovim plugin written in Lua that provides automatic command execution on file save with terminal output in a split window. It uses mini.nvim for testing and just for task automation.
+
+## Build, Lint, and Test Commands
+
+### Setup
+```bash
+# Install dependencies (mini.nvim for testing)
+just setup
+```
+
+### Testing
+```bash
+# Run all tests
+just test-all
+# Equivalent: nvim --headless --noplugin -u "./scripts/init.lua" -c "lua MiniTest.run()"
+
+# Run a single test file
+just test-file ./tests/test_example.lua
+# Equivalent: nvim --headless --noplugin -u "./scripts/init.lua" -c "lua MiniTest.run_file('path/to/test.lua')"
+```
+
+### Linting/Formatting
+```bash
+# Format Lua code with StyLua (configuration in .stylua.toml)
+stylua .
+
+# Format justfile
+just fmt-just
+
+# Run pre-commit hooks (includes StyLua, trailing whitespace, JSON formatting, etc.)
+pre-commit run -a
+```
+
+### Task Automation
+```bash
+# List all available just commands
+just
+```
+
+## Project Structure
+
+```
+quickfail.nvim/
+├── lua/quickfail/          # Main plugin source
+│   ├── init.lua           # Plugin entry point, setup(), public API
+│   ├── constants.lua      # Plugin defaults, commands, autogroup
+│   ├── types.lua          # Type definitions (@class annotations)
+│   └── utils.lua          # Utility functions
+├── tests/                  # MiniTest test files
+│   └── test_example.lua   # Test template
+├── scripts/
+│   └── init.lua           # Test initialization script
+├── deps/                   # Dependencies (mini.nvim)
+├── .stylua.toml           # StyLua configuration
+├── .pre-commit-config.yaml # Pre-commit hooks
+├── justfile               # Task runner configuration
+└── README.md              # User documentation
+```
+
+## Code Style Guidelines
+
+### General Formatting
+
+- **Column width**: 120 characters max
+- **Indentation**: 2 spaces (no tabs)
+- **Line endings**: Unix (LF)
+- **Quote style**: Auto prefer double quotes
+- **Call parentheses**: Always use parentheses for function calls (`no_call_parentheses = false`)
+
+### Import/Require Conventions
+
+```lua
+-- Require statements at the top of the file
+local M = {}
+
+-- Load dependencies after module table declaration
+local utils = require("quickfail.utils")
+local constants = require("quickfail.constants")
+```
+
+### Type Annotations
+
+Use LuaLS type annotations extensively:
+
+```lua
+---@require "quickfail.types"
+
+---@param entry Entry
+---@returns nil
+M.quickfail = function(entry)
+  -- implementation
+end
+
+---@type Job[] cache of active jobs
+M.jobs = {}
+```
+
+Define types in `types.lua`:
+
+```lua
+---@class (exact) Entry
+---@field cmd string[] | fun():string[] command to run
+---@field keycodes string?
+---@field pattern string?
+---@field title string?
+```
+
+### Naming Conventions
+
+- **Module variable**: Always use `M` for the module table
+- **Local functions**: snake_case (e.g., `check_buffer`, `expand_cmd`)
+- **Public API functions**: snake_case (e.g., `M.setup`, `M.select`, `M.manual`)
+- **Private module vars**: Direct fields on `M` (e.g., `M.jobs`, `M.config`)
+- **Constants**: SCREAMING_SNAKE_CASE in enums (e.g., `M.CMDS.reload`)
+- **Function parameters**: snake_case (e.g., `user_config`, `bufnr`)
+
+### Error Handling
+
+Use `vim.notify()` with appropriate log levels:
+
+```lua
+-- Error notification
+vim.notify("Command is required!", vim.log.levels.ERROR, {})
+
+-- Warning notification
+vim.notify("Job buffer invalid, removing job", vim.log.levels.WARN, {})
+
+-- Info notification
+vim.notify(string.format("Will run: %s", cmd), vim.log.levels.INFO, {})
+```
+
+### Nil Safety
+
+- Check for nil before operations
+- Use optional chaining where appropriate
+- Provide defaults: `entry.subshell = entry.subshell or M.config.defaults.subshell`
+
+### Function Documentation
+
+```lua
+---Brief description of what the function does
+---@param param_name type description
+---@returns return_type description
+M.function_name = function(param_name)
+  -- implementation
+end
+```
+
+### Comments
+
+```lua
+-- Single line comments for explanations
+-- TODO: Format for pending work
+-- WARN: For important warnings
+-- INFO: For informational notes
+```
+
+## Testing Guidelines
+
+### Test Structure
+
+Use MiniTest framework:
+
+```lua
+local expect, eq = MiniTest.expect, MiniTest.expect.equality
+
+local child = MiniTest.new_child_neovim()
+
+local T = MiniTest.new_set({
+  hooks = {
+    pre_case = function()
+      child.restart({ "-u", "scripts/init.lua" })
+      child.lua([[M = require('quickfail')]])
+    end,
+    post_once = child.stop,
+  },
+})
+
+T["in child"] = MiniTest.new_set()
+
+T["in child"]["test case name"] = function()
+  eq(child.lua_get([[M.function()]]), expected_value)
+end
+
+return T
+```
+
+### Test Files
+
+- Place test files in `tests/` directory
+- Name test files with `test_` prefix (e.g., `test_example.lua`)
+- Each test file must return the test set `T`
+
+## Plugin Development Patterns
+
+### Module Pattern
+
+```lua
+local M = {}
+
+-- Private functions and variables
+
+-- Public API
+function M.setup(user_config)
+  user_config = user_config or {}
+  M.config = vim.tbl_deep_extend("force", constants.plugin_defaults, user_config)
+  -- Register commands, autocommands, etc.
+end
+
+return M
+```
+
+### Command Registration
+
+```lua
+vim.api.nvim_create_user_command(
+  "CommandName",
+  M.function_name,
+  { desc = "Description", nargs = "*" }
+)
+```
+
+### Autocommand Registration
+
+```lua
+local autocmd_id = vim.api.nvim_create_autocmd("EventName", {
+  group = constants.Augroup,
+  pattern = pattern,
+  callback = callback_function,
+})
+```
+
+## Common Patterns
+
+### Path Expansion
+
+Use `vim.fn.expand()` for special symbols:
+- `%` - current filename
+- `%:p` - full path
+- `%:h` - directory
+- `%:t` - filename only
+- `%:r` - remove extension
+- `$VAR` - environment variables
+
+### Buffer Validation
+
+```lua
+local function check_buffer(bufnr)
+  if bufnr == nil then return false end
+  return vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr)
+end
+```
+
+## Pre-commit Hooks
+
+The following checks run automatically:
+- YAML, JSON, XML, TOML validation
+- Line ending normalization
+- Trailing whitespace removal
+- Symlink and merge conflict detection
+- Private key and AWS credential detection
+- StyLua formatting
+- File size limits (500KB max)
+
+## Key References
+
+- Neovim API: `:help api`
+- LuaLS annotations: https://luals.github.io/wiki/annotations/
+- MiniTest: See `deps/mini.nvim/` documentation
+- Filename modifiers: `:help filename-modifiers`
+- Job control: `:help jobstart-options`
