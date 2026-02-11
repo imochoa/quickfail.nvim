@@ -23,3 +23,8 @@ test-all:
 [group('test')]
 test-file file="./tests/example.lua":
     nvim --headless --noplugin -u "./scripts/init.lua" -c "lua MiniTest.run_file('{{ file }}')"
+
+# Generate documentation with mini.doc
+[group('doc')]
+doc:
+    nvim --headless --noplugin -u "./scripts/init.lua" -c "luafile scripts/minidoc.lua" -c "qa!"

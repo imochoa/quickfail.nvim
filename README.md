@@ -1,6 +1,7 @@
 # QuickFail.nvim
 
 ## Setup
+
 ### lazy.nvim
 ```lua
 return {

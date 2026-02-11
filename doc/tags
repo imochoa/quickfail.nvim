@@ -1,0 +1,11 @@
+M.check_jobs()	quickfail.txt	/*M.check_jobs()*
+M.config	quickfail.txt	/*M.config*
+M.jobs	quickfail.txt	/*M.jobs*
+M.manual()	quickfail.txt	/*M.manual()*
+M.quickfail()	quickfail.txt	/*M.quickfail()*
+M.quit()	quickfail.txt	/*M.quit()*
+M.select()	quickfail.txt	/*M.select()*
+M.setup()	quickfail.txt	/*M.setup()*
+quickfail	quickfail.txt	/*quickfail*
+quickfail.nvim	quickfail.txt	/*quickfail.nvim*
+utils	quickfail.txt	/*utils*
