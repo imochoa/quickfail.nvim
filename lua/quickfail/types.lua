@@ -17,7 +17,7 @@
 --- @field term boolean?
 
 ---@class (exact) Entry
----@field cmd string[] | fun():string[] command to run
+---@field cmd listCmd | fcnCmd command to run
 ---@field keycodes string?
 ---@field pattern string?
 ---@field title string?
@@ -38,3 +38,6 @@
 ---@field defaults Entry
 
 ---@alias uint8 number (0-255) integers
+
+---@alias listCmd string[]
+---@alias fcnCmd function(nil):string[]
