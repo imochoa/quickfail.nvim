@@ -1,3 +1,58 @@
+--- Automatic command execution on file save
+---
+--- MIT License Copyright (c) 2025
+---
+--- Features:
+--- - Run commands automatically on file save with configurable patterns
+--- - Display command output in a persistent terminal split window
+--- - Support for both static commands and dynamic Lua functions
+--- - File pattern matching for auto-execution (e.g., "*.lua", "*.py")
+--- - Optional keyboard shortcuts for manual command execution
+--- - Support for environment variables and filename modifiers (%, %:p, etc.)
+--- - Integration with Snacks.nvim picker for interactive command selection
+--- - Multiple simultaneous jobs with independent terminal windows
+---
+--- # Setup ~
+---
+--- This module needs a setup with `require('quickfail').setup({})` (replace
+--- `{}` with your `config` table). It will create global Lua table `M` which
+--- you can use for scripting or manually (with `:lua require('quickfail').*`).
+---
+--- See |quickfail.setup()| for configuration options.
+---
+--- # Example usage ~
+--- >lua
+---   require('quickfail').setup({
+---     menu = {
+---       { cmd = { "python", "%" }, title = "Run Python", desc = "Execute current file" },
+---       { cmd = { "just", "test" }, title = "Run Tests", desc = "Run test suite" },
+---     },
+---     defaults = {
+---       pattern = "*",
+---       subshell = true,
+---     },
+---   })
+--- <
+---
+--- # Commands ~
+---
+--- - |:QuickFailSelect| - Open picker to select and run a command
+--- - |:QuickFailManual| - Manually enter a command to run
+--- - |:QuickFailQuit| - Stop all active QuickFail jobs
+--- - |:QuickFailReload| - Reload the QuickFail plugin
+---
+--- # Highlight groups ~
+---
+--- This plugin uses highlight groups from Snacks.nvim picker when available:
+--- - `SnacksPickerLabel` - Item index labels in picker
+--- - `SnacksPickerTitle` - Command titles in picker
+--- - `SnacksPickerComment` - Command descriptions in picker
+---
+---@tag quickfail quickfail.nvim
+
+---@toc quickfail.contents
+
+-- Module definition ==========================================================
 local M = {}
 
 ---@require "quickfail.types"
@@ -141,7 +196,17 @@ M.quickfail = function(entry)
   job.callback()
 end
 
----@returns nil
+--- Manually enter and run a command
+---
+--- Prompts the user for:
+--- - Command to run (space-separated arguments)
+--- - File pattern for auto-run on save (optional, empty for none)
+--- - Keyboard shortcut (optional, e.g., "<F13>")
+---
+--- The command will be executed immediately and set up for future triggers
+--- based on the provided pattern and/or keycode.
+---
+---@return nil
 function M.manual()
   -- vim.print(args)
   local cmd_str = vim.fn.input("cmd to run")
@@ -156,12 +221,29 @@ function M.manual()
   M.quickfail(entry)
 end
 
----@returns nil
+--- Open interactive picker to select and run a command
+---
+--- Displays a picker (using Snacks.nvim if available, falling back to
+--- vim.ui.select) with all configured menu commands. The picker shows:
+--- - Command title and description in the main list
+--- - Detailed preview with command, pattern, keycodes, and description
+--- - Expanded command showing how special symbols (%, %:p, etc.) resolve
+---
+--- Navigate with j/k or arrow keys, filter with fuzzy search, and press
+--- Enter to select and execute a command.
+---
+---@return nil
 function M.select()
   utils.menu(M.config.menu)
 end
 
----@returns nil
+--- Stop all active QuickFail jobs
+---
+--- Closes all terminal buffers and removes all autocommands created by
+--- active QuickFail jobs. This is useful for cleanup when you want to
+--- stop all running commands and close their terminal windows.
+---
+---@return nil
 function M.quit()
   for _, job in ipairs(M.jobs) do
     if job.autocmd_id then
@@ -171,12 +253,56 @@ function M.quit()
   end
 end
 
---- Initial (Default) configuration
+--- Module configuration
+---
+--- Default values:
+---@eval return MiniDoc.afterlines_to_code(MiniDoc.current.eval_section)
+---@text
+--- # Configuration structure ~
+---
+--- `menu` is an array of Entry tables with the following fields:
+--- - `cmd` (string[]|function) - Command to run. Can be a table of strings
+---   (e.g., {"python", "%"}) or a Lua function that returns such a table.
+---   Supports special symbols: %, %:p, %:h, $VAR, etc.
+--- - `title` (string?) - Display name in the picker menu
+--- - `desc` (string?) - Description shown in picker preview
+--- - `pattern` (string?) - File pattern for auto-run (e.g., "*.lua", "*")
+--- - `keycodes` (string?) - Keyboard shortcut (e.g., "<F13>")
+--- - `subshell` (boolean?) - Whether to run command in a subshell
+---
+--- `defaults` contains fallback values for optional Entry fields.
+---
 ---@type Config
-M.config = {}
+M.config = {
+  menu = {},
+  defaults = {
+    cmd = {},
+    pattern = "*",
+    keycodes = nil,
+    subshell = true,
+  },
+}
+--minidoc_afterlines_end
 
---- Setup function that users call
----@param user_config Config?
+--- Module setup
+---
+--- Configure QuickFail with menu items and default settings. This function
+--- must be called before using any QuickFail commands. It will:
+--- - Merge user configuration with defaults
+--- - Create user commands (:QuickFailSelect, :QuickFailManual, etc.)
+--- - Set up autocommands and keymaps as needed
+---
+---@param user_config Config? Module config table. See |quickfail.config|.
+---
+---@usage >lua
+---   require('quickfail').setup({
+---     menu = {
+---       { cmd = { "python", "%" }, title = "Run Python", pattern = "*.py" },
+---       { cmd = { "just", "test" }, title = "Run Tests" },
+---     },
+---   })
+--- <
+---
 ---@return nil
 function M.setup(user_config)
   user_config = user_config or {}
