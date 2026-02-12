@@ -3,59 +3,72 @@ local M = {}
 ---@require "quickfail.types"
 local utils = require("quickfail.utils")
 
+---@param cmds string[][]
+---@return string[]
+local amp_concat = function(cmds)
+  if #cmds == 0 then
+    return {}
+  end
+  if #cmds == 1 then
+    return cmds[1]
+  end
+
+  local full_cmd = {}
+  for _, cmd_part in ipairs(cmds) do
+    for _, c in ipairs(cmd_part) do
+      table.insert(full_cmd, c)
+    end
+    table.insert(full_cmd, "&&")
+  end
+  return full_cmd
+end
+
+---@param ext string
+---@param allowed_extensions string[]
+---@return boolean
+local ext_check = function(ext, allowed_extensions)
+  for _, e in ipairs(allowed_extensions) do
+    if e == ext then
+      return true
+    end
+  end
+  return false
+end
+
+---You will need to call expand_cmd/vim.fn.expand yourself
 ---@type {[string]: fcnCmd}
 M.functions = {
-  mk_cmd = function()
-    local cmd = { "echo", "word!" }
-    utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
-    return cmd
+  test_cmd = function()
+    -- utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
+    return amp_concat({ { "echo", "hello" }, { "echo", "world" } })
   end,
   quadlet_iterate = function()
     local extension = vim.fn.expand("%:e"):lower()
-    if extension ~= "container" then
+
+    if not ext_check(extension, { "container", "pod" }) then
       return {}
     end
+
     local service_name = vim.fn.expand("%:t:r") .. ".service"
 
-    local cmd = { "systemctl", "--user", "daemon-reload" }
-    utils.table_append(cmd, { "&&", "systemctl", "--user", "restart", service_name })
-    utils.table_append(cmd, { "&&", "journalctl", "--user", "-xeu", service_name })
-    return cmd
+    return amp_concat({
+      { "systemctl", "--user", "daemon-reload" },
+      { "systemctl", "--user", "restart", service_name },
+      { "journalctl", "--user", "-xeu", service_name },
+    })
   end,
 }
 
----@type Entry[]
-M.entries = {
-  precommit = { cmd = { "pre-commit", "run", "-a" }, title = "pre-commit", desc = "Test!" },
-  bash = { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
-  execute = { cmd = { "%:p" }, title = "Execute", desc = "Test!" },
-  source = { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" },
-  nix_repl = { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
-  -- -- # --debug
-  -- -- # --verbose
-  -- -- # --write-to ./out
-  -- -- nix repl --verbose --debug --debugger --file ./example.nix
-  -- { cmd = { "cat", "%" }, title = "cat", desc = "Test!" },
-  -- { cmd = { "python", "%" }, title = "python", desc = "Run python file" },
-  -- { cmd = { "just", "%" }, title = "just", desc = "Run Just recipe" },
-  -- { cmd = mk_cmd, title = "function test", desc = "Test!" },
-  -- { cmd = quadlet_iterate, title = "Quadlet", desc = "Test!" },
-  -- docs
-  -- { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" },
-  -- { cmd = { "echo", "%:p:r" }, title = "No Ext", desc = "Test!" },
-  -- { cmd = { "echo", "%:p:r", ";", "echo", "second" }, title = "multi-cmd", desc = "Test!" },
-  -- -- h: filename-modifiers
-  -- -- % filename
-  -- -- %< filename without extension
-  -- -- %:p full path
-  -- -- %:. relative path
-  -- -- %:~ path from home
-  -- -- %:h head (parent directory)
-  -- -- %:h:h head head (grand-parent directory)
-  -- -- %:h tail (filename)
-  -- -- %:h tail (filename)
-  -- { cmd = { "echo", "$HOME" }, title = "Env vars work", desc = "Test!" },
-  -- { cmd = { "echo", "%:p:h" }, title = "Absolute Path", desc = "Test!" },
-}
+---@type {[any]: Entry}
+M.entries = {}
+M.entries.quadlet = { title = "quadlet", cmd = M.functions.quadlet_iterate, desc = "Fancy \n Stuff" }
+M.entries.precommit =
+  { title = "pre-commit", cmd = { "pre-commit", "run", "-a" }, desc = "Run all pre-commit hooks over all files" }
+-- M.entries.bash = { title="bash",cmd = { "bash", "%" }, desc = "Test!" }
+M.entries.execute = { title = "Run", cmd = { "%:p" }, desc = "In default shell" }
+M.entries.source = { title = "source", cmd = { "source", "%:p" }, desc = "Default shell" }
+-- M.entries.cat = { title = "cat", cmd = { "cat", "%" }, desc = "Test!" }
+M.entries.python = { title = "python", cmd = { "python", "%" }, desc = "Run with python " }
+M.entries.just = { title = "just", cmd = { "just", "%" }, desc = "Run Just recipe" }
 
 return M

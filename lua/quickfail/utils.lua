@@ -60,28 +60,118 @@ local fallback_menu = function(menu_items)
   end)
 end
 
----@param menu_items any
+---@param ctx snacks.picker.preview.ctx
+local snacks_preview_basic = function(ctx)
+  -- preview = entry.cmd and type(entry.cmd) == "function" and "<function>" or table.concat(M.expand_cmd(entry.cmd or {}), " "),
+
+  local cmd_preview = "<no command>"
+
+  ---@type Entry
+  local entry = ctx.item.entry
+
+  if type(entry.cmd) == "function" then
+    -- or table.concat(M.expand_cmd(ctx.item.entry.cmd or {}), " "),
+    cmd_preview = entry.cmd()
+  else
+    cmd_preview = table.concat(entry.cmd or {}, " ")
+    -- or table.concat(M.expand_cmd(ctx.item.entry.cmd or {}), " "),
+  end
+  ctx.preview:set_lines({
+    "Command:",
+    cmd_preview,
+  })
+end
+
+---@param ctx snacks.picker.preview.ctx
+local snacks_preview_fancy = function(ctx)
+  local item = ctx.item
+  ---@type Entry
+  local entry = item.entry
+  local lines = {}
+
+  -- Header
+  table.insert(lines, "# QuickFail Command Details")
+  table.insert(lines, "")
+
+  -- Command section
+  table.insert(lines, "## Command")
+  if type(entry.cmd) == "function" then
+    table.insert(lines, "```lua")
+    table.insert(lines, "<function>")
+    table.insert(lines, "```")
+    table.insert(lines, "")
+    table.insert(lines, "_Note: This is a Lua function that generates the command dynamically._")
+  else
+    table.insert(lines, "```bash")
+    table.insert(lines, table.concat(entry.cmd, " "))
+    table.insert(lines, "```")
+  end
+  table.insert(lines, "")
+
+  -- Expanded command (if not a function and current buffer exists)
+  if type(entry.cmd) ~= "function" and vim.api.nvim_buf_is_valid(0) then
+    local has_expansion = false
+    local expanded = {}
+    for _, c in ipairs(entry.cmd) do
+      local exp = vim.fn.expand(c)
+      table.insert(expanded, exp)
+      if exp ~= c then
+        has_expansion = true
+      end
+    end
+
+    if has_expansion then
+      table.insert(lines, "## Expanded Command (Current File)")
+      table.insert(lines, "```bash")
+      table.insert(lines, table.concat(expanded, " "))
+      table.insert(lines, "```")
+      table.insert(lines, "")
+    end
+  end
+
+  -- Additional details
+  if entry.pattern and entry.pattern ~= "" then
+    table.insert(lines, "## Auto-run Pattern")
+    table.insert(lines, "`" .. entry.pattern .. "`")
+    table.insert(lines, "")
+  end
+
+  if entry.keycodes and entry.keycodes ~= "" then
+    table.insert(lines, "## Keyboard Shortcut")
+    table.insert(lines, "`" .. entry.keycodes .. "`")
+    table.insert(lines, "")
+  end
+
+  if entry.desc and entry.desc ~= "" then
+    table.insert(lines, "## Description")
+    table.insert(lines, entry.desc)
+    table.insert(lines, "")
+  end
+
+  if entry.subshell ~= nil then
+    table.insert(lines, "## Subshell")
+    table.insert(lines, entry.subshell and "Yes" or "No")
+  end
+
+  -- Set buffer content and filetype for syntax highlighting
+  vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, lines)
+  vim.bo[ctx.buf].filetype = "markdown"
+end
+
+---@param menu_items Entry[]
 ---@returns boolean
 local snacks_menu = function(menu_items)
   local has_snacks, snacks = pcall(require, "snacks")
   if not has_snacks then
     return false
   end
-  -- Build items for snacks picker
-  ---@type table[]
+
+  ---@type snacks.picker.finder.Item[]
   local items = {}
-  for i, entry in ipairs(menu_items) do
-    local title = entry.title or string.format("Command %d", i)
-    local desc = entry.desc or ""
-    table.insert(items, {
-      idx = i,
-      text = title,
-      desc = desc,
-      entry = entry,
-    })
+  for idx, entry in ipairs(menu_items) do
+    table.insert(items, { idx = idx, entry = entry })
   end
 
-  -- Use snacks picker with custom format and preview
   snacks.picker({
     title = "QuickFail Commands",
     items = items,
@@ -89,89 +179,12 @@ local snacks_menu = function(menu_items)
       preset = "default",
     },
     format = function(item)
-      local ret = {}
-      -- Format: [idx] title - description
-      ret[#ret + 1] = { string.format("[%d] ", item.idx), "SnacksPickerLabel" }
-      ret[#ret + 1] = { item.text, "SnacksPickerTitle" }
-      if item.desc and item.desc ~= "" then
-        ret[#ret + 1] = { " - ", "Comment" }
-        ret[#ret + 1] = { item.desc, "SnacksPickerComment" }
-      end
-      return ret
+      return {
+        { string.format("[%s] ", item.entry.title or "No Title"), "SnacksPickerLabel" },
+        { item.entry.desc, "SnacksPickerComment" },
+      }
     end,
-    preview = function(ctx)
-      local item = ctx.item
-      local entry = item.entry
-      local lines = {}
-
-      -- Header
-      table.insert(lines, "# QuickFail Command Details")
-      table.insert(lines, "")
-
-      -- Command section
-      table.insert(lines, "## Command")
-      if type(entry.cmd) == "function" then
-        table.insert(lines, "```lua")
-        table.insert(lines, "<function>")
-        table.insert(lines, "```")
-        table.insert(lines, "")
-        table.insert(lines, "_Note: This is a Lua function that generates the command dynamically._")
-      else
-        table.insert(lines, "```bash")
-        table.insert(lines, table.concat(entry.cmd, " "))
-        table.insert(lines, "```")
-      end
-      table.insert(lines, "")
-
-      -- Expanded command (if not a function and current buffer exists)
-      if type(entry.cmd) ~= "function" and vim.api.nvim_buf_is_valid(0) then
-        local has_expansion = false
-        local expanded = {}
-        for _, c in ipairs(entry.cmd) do
-          local exp = vim.fn.expand(c)
-          table.insert(expanded, exp)
-          if exp ~= c then
-            has_expansion = true
-          end
-        end
-
-        if has_expansion then
-          table.insert(lines, "## Expanded Command (Current File)")
-          table.insert(lines, "```bash")
-          table.insert(lines, table.concat(expanded, " "))
-          table.insert(lines, "```")
-          table.insert(lines, "")
-        end
-      end
-
-      -- Additional details
-      if entry.pattern and entry.pattern ~= "" then
-        table.insert(lines, "## Auto-run Pattern")
-        table.insert(lines, "`" .. entry.pattern .. "`")
-        table.insert(lines, "")
-      end
-
-      if entry.keycodes and entry.keycodes ~= "" then
-        table.insert(lines, "## Keyboard Shortcut")
-        table.insert(lines, "`" .. entry.keycodes .. "`")
-        table.insert(lines, "")
-      end
-
-      if entry.desc and entry.desc ~= "" then
-        table.insert(lines, "## Description")
-        table.insert(lines, entry.desc)
-        table.insert(lines, "")
-      end
-
-      if entry.subshell ~= nil then
-        table.insert(lines, "## Subshell")
-        table.insert(lines, entry.subshell and "Yes" or "No")
-      end
-
-      -- Set buffer content and filetype for syntax highlighting
-      vim.api.nvim_buf_set_lines(ctx.buf, 0, -1, false, lines)
-      vim.bo[ctx.buf].filetype = "markdown"
-    end,
+    preview = snacks_preview_basic,
     confirm = function(picker, item)
       picker:close()
       M.quickfail(item.entry)

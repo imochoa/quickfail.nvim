@@ -302,6 +302,30 @@ M.config = {
 ---     },
 ---   })
 --- <
+---    -- { cmd = { "pre-commit", "run", "-a" }, title = "pre-commit", desc = "Test!" }, -- { cmd = { "bash", "%" }, title = "bash", desc = "Test!" }, -- { cmd = { "%:p" }, title = "Execute", desc = "Test!" }, -- { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" }, -- { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" }, -- { cmd = { "echo", "%:p:r" }, title = "No Ext", desc = "Test!" },
+---    -- { cmd = { "echo", "%:p:r", ";", "echo", "second" }, title = "multi-cmd", desc = "Test!" },
+---    -- { cmd = mk_cmd, title = "function test", desc = "Test!" },
+---    -- { cmd = quadlet_iterate, title = "Quadlet", desc = "Test!" },
+---    -- -- h: filename-modifiers
+---    -- -- % filename
+---    -- -- %< filename without extension
+---    -- -- %:p full path
+---    -- -- %:. relative path
+---    -- -- %:~ path from home
+---    -- -- %:h head (parent directory)
+---    -- -- %:h:h head head (grand-parent directory)
+---    -- -- %:h tail (filename)
+---    -- -- %:h tail (filename)
+---    -- { cmd = { "echo", "$HOME" }, title = "Env vars work", desc = "Test!" },
+---    -- { cmd = { "echo", "%:p:h" }, title = "Absolute Path", desc = "Test!" },
+---    -- { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
+---    -- -- # --debug
+---    -- -- # --verbose
+---    -- -- # --write-to ./out
+---    -- -- nix repl --verbose --debug --debugger --file ./example.nix
+---    -- { cmd = { "cat", "%" }, title = "cat", desc = "Test!" },
+---    -- { cmd = { "python", "%" }, title = "python", desc = "Run python file" },
+---    -- { cmd = { "just", "%" }, title = "just", desc = "Run Just recipe" },
 ---
 ---@return nil
 function M.setup(user_config)

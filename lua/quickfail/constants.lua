@@ -2,59 +2,21 @@ local M = {}
 
 ---@require "quickfail.types"
 local utils = require("quickfail.utils")
+local shell_cmds = require("quickfail.shell_cmds")
 
----You will need to call expand_cmd/vim.fn.expand yourself
----@returns string[]
-local mk_cmd = function()
-  local cmd = { "echo", "word!" }
-  utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
-  return cmd
-end
-
----You will need to call expand_cmd yourself
----@returns string[]
-local quadlet_iterate = function()
-  local service_name = vim.fn.expand("%:t:r") .. ".service"
-
-  local cmd = { "systemctl", "--user", "daemon-reload" }
-  utils.table_append(cmd, { "&&", "systemctl", "--user", "restart", service_name })
-  utils.table_append(cmd, { "&&", "journalctl", "--user", "-xeu", service_name })
-  return cmd
+---@type Entry[]
+local all_entries = {}
+for _, c in pairs(shell_cmds.entries) do
+  table.insert(all_entries, c)
 end
 
 ---@type Config
 M.plugin_defaults = {
-  menu = {
-    { cmd = { "pre-commit", "run", "-a" }, title = "pre-commit", desc = "Test!" },
-    { cmd = { "bash", "%" }, title = "bash", desc = "Test!" },
-    { cmd = { "%:p" }, title = "Execute", desc = "Test!" },
-    { cmd = { "source", "%:p" }, title = "Source", desc = "Test!" },
-    { cmd = { "echo", "%:p" }, title = "Absolute Path", desc = "Test!" },
-    { cmd = { "echo", "%:p:r" }, title = "No Ext", desc = "Test!" },
-    { cmd = { "echo", "%:p:r", ";", "echo", "second" }, title = "multi-cmd", desc = "Test!" },
-    { cmd = mk_cmd, title = "function test", desc = "Test!" },
-    { cmd = quadlet_iterate, title = "Quadlet", desc = "Test!" },
-    -- h: filename-modifiers
-    -- % filename
-    -- %< filename without extension
-    -- %:p full path
-    -- %:. relative path
-    -- %:~ path from home
-    -- %:h head (parent directory)
-    -- %:h:h head head (grand-parent directory)
-    -- %:h tail (filename)
-    -- %:h tail (filename)
-    { cmd = { "echo", "$HOME" }, title = "Env vars work", desc = "Test!" },
-    { cmd = { "echo", "%:p:h" }, title = "Absolute Path", desc = "Test!" },
-    { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
-    -- # --debug
-    -- # --verbose
-    -- # --write-to ./out
-    -- nix repl --verbose --debug --debugger --file ./example.nix
-    { cmd = { "cat", "%" }, title = "cat", desc = "Test!" },
-    { cmd = { "python", "%" }, title = "python", desc = "Run python file" },
-    { cmd = { "just", "%" }, title = "just", desc = "Run Just recipe" },
-  },
+  menu = all_entries,
+  -- menu = {
+  --   shell_cmds.entries.precommit,
+  --   shell_cmds.entries.bash,
+  -- },
   defaults = {
     cmd = {},
     pattern = "*",

@@ -50,6 +50,24 @@ T["quadlet"] = MiniTest.new_set({
         "file.service",
       },
     },
+    {
+      "file.pod",
+      {
+        "systemctl",
+        "--user",
+        "daemon-reload",
+        "&&",
+        "systemctl",
+        "--user",
+        "restart",
+        "file.service",
+        "&&",
+        "journalctl",
+        "--user",
+        "-xeu",
+        "file.service",
+      },
+    },
   },
 })
 
