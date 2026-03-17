@@ -169,7 +169,11 @@ local snacks_menu = function(menu_items)
   ---@type snacks.picker.finder.Item[]
   local items = {}
   for idx, entry in ipairs(menu_items) do
-    table.insert(items, { idx = idx, entry = entry })
+    table.insert(items, {
+      idx = idx,
+      entry = entry,
+      text = (entry.title or "") .. " " .. (entry.desc or ""),
+    })
   end
 
   snacks.picker({

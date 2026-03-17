@@ -268,7 +268,6 @@ end
 --- - `cmd` (string[]|function) - Command to run. Can be a table of strings
 ---   (e.g., {"python", "%"}) or a Lua function that returns such a table.
 ---   Supports special symbols: %, %:p, %:h, $VAR, etc.
---- - `title` (string?) - Display name in the picker menu
 --- - `desc` (string?) - Description shown in picker preview
 --- - `pattern` (string?) - File pattern for auto-run (e.g., "*.lua", "*")
 --- - `keycodes` (string?) - Keyboard shortcut (e.g., "<F13>")
