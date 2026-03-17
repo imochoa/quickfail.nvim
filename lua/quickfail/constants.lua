@@ -22,6 +22,7 @@ M.plugin_defaults = {
     pattern = "*",
     keycodes = nil,
     subshell = true,
+    exit_sequence = nil,
   },
 }
 

@@ -23,6 +23,7 @@
 ---@field title string?
 ---@field desc string?
 ---@field subshell boolean?
+---@field exit_sequence string[]? strings to send to the terminal before retriggering the command (e.g. {"q", "y"} for pdb)
 ---@field opts JobStartOpts?
 
 ---@class (exact) Job More info with 'help: highlight', 'help: highlight-args'

@@ -38,8 +38,8 @@ end
 ---You will need to call expand_cmd/vim.fn.expand yourself
 ---@type {[string]: fcnCmd}
 M.functions = {
+  -- utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
   test_cmd = function()
-    -- utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
     return amp_concat({ { "echo", "hello" }, { "echo", "world" } })
   end,
   quadlet_iterate = function()
@@ -53,6 +53,7 @@ M.functions = {
 
     return amp_concat({
       { "systemctl", "--user", "daemon-reload" },
+      { "systemd-analyze", "--user", "--generators=true", "verify", service_name },
       { "systemctl", "--user", "restart", service_name },
       { "journalctl", "--user", "-xeu", service_name },
     })
@@ -68,7 +69,24 @@ M.entries.precommit =
 M.entries.execute = { title = "Run", cmd = { "%:p" }, desc = "In default shell" }
 M.entries.source = { title = "source", cmd = { "source", "%:p" }, desc = "Default shell" }
 -- M.entries.cat = { title = "cat", cmd = { "cat", "%" }, desc = "Test!" }
-M.entries.python = { title = "python", cmd = { "python", "%" }, desc = "Run with python " }
+M.entries.python = { title = "python", cmd = { "python", "%" }, desc = "Run with python" }
+-- M.entries.pdb = { title = "pdb", cmd = { "python", "-m", "pdb", "%" }, pattern = "*.py", desc = "Debug with pdb", exit_sequence = { "q", "y" } }
 M.entries.just = { title = "just", cmd = { "just", "%" }, desc = "Run Just recipe" }
+M.entries["nix-instantiate"] = {
+  title = "nix-instantiate",
+  cmd = { "nix-instantiate", "--eval", "%" },
+  desc = "Run Nix instantiate, --json, --attr <what/to/print>",
+}
+M.entries["nix-eval"] = {
+  title = "nix-eval",
+  cmd = { "nix", "eval", "--file", "%" },
+  desc = [[Run Nix eval
+# --debug
+# --verbose
+# --write-to ./out
+nix repl --verbose --debug --debugger --file ./example.nix
+]],
+}
+---    -- { cmd = { "nix", "eval", "--file", "%", "output.printThis" }, title = "nix", desc = "Test!" },
 
 return M

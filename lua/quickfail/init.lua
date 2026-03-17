@@ -159,12 +159,16 @@ M.quickfail = function(entry)
       cmd_str = "( " .. cmd_str .. " )"
     end
     -- TODO: interrupt cmd?
+    local exit_sequence = job.entry.exit_sequence
+    if exit_sequence then
+      for _, keys in ipairs(exit_sequence) do
+        vim.api.nvim_chan_send(job.chan, keys .. "\n")
+      end
+    end
     vim.api.nvim_chan_send(job.chan, "clear\n" .. cmd_str .. "\n")
   end
 
   -- TODO: add oneshot jobs
-
-  -- TODO: allow sending interrupt command e.g. 'q' before running
 
   -- Escape to close the terminal split
   vim.keymap.set("n", "<q>", function()
@@ -269,6 +273,10 @@ end
 --- - `pattern` (string?) - File pattern for auto-run (e.g., "*.lua", "*")
 --- - `keycodes` (string?) - Keyboard shortcut (e.g., "<F13>")
 --- - `subshell` (boolean?) - Whether to run command in a subshell
+--- - `exit_sequence` (string[]?) - Strings to send to the terminal before
+---   retriggering the command. Each string is sent followed by Enter.
+---   Useful for commands that need explicit exit keypresses (e.g., {"q", "y"}
+---   for pdb).
 ---
 --- `defaults` contains fallback values for optional Entry fields.
 ---
@@ -280,6 +288,7 @@ M.config = {
     pattern = "*",
     keycodes = nil,
     subshell = true,
+    exit_sequence = nil,
   },
 }
 --minidoc_afterlines_end
