@@ -58,8 +58,9 @@ quickfail.nvim/
 ├── lua/quickfail/          # Main plugin source
 │   ├── init.lua           # Plugin entry point, setup(), public API
 │   ├── constants.lua      # Plugin defaults, commands, autogroup
+│   ├── shell_cmds.lua     # Built-in command entries (python, pdb, nix, etc.)
 │   ├── types.lua          # Type definitions (@class annotations)
-│   └── utils.lua          # Utility functions
+│   └── utils.lua          # Utility functions, picker (snacks/fallback)
 ├── tests/                  # MiniTest test files
 │   └── test_example.lua   # Test template
 ├── scripts/
@@ -121,6 +122,10 @@ Define types in `types.lua`:
 ---@field keycodes string?
 ---@field pattern string?
 ---@field title string?
+---@field desc string?
+---@field subshell boolean?
+---@field exit_sequence string[]? strings to send to the terminal before retriggering the command
+---@field opts JobStartOpts?
 ```
 
 ### Naming Conventions
