@@ -60,6 +60,8 @@ M.functions = {
   end,
 }
 
+-- uvx --from sourcemeta-jsonschema jsonschema
+
 ---@type {[any]: Entry}
 M.entries = {}
 M.entries.quadlet = { title = "quadlet", cmd = M.functions.quadlet_iterate, desc = "Fancy \n Stuff" }

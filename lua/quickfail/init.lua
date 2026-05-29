@@ -119,7 +119,7 @@ M.quickfail = function(entry)
     chan = vim.fn.jobstart({ vim.o.shell or "sh" }, {
       term = true,
       -- cwd={},
-      -- env={},
+      env = { HISTFILE = "" },
     }),
   }
 
@@ -158,7 +158,10 @@ M.quickfail = function(entry)
     if job.entry.subshell or false then
       cmd_str = "( " .. cmd_str .. " )"
     end
-    -- TODO: interrupt cmd?
+
+    -- Send Ctrl-U to discard any text the user may have typed between reruns
+    -- (Ctrl-U = "kill line" in most shells, clears input without sending SIGINT)
+    vim.api.nvim_chan_send(job.chan, "\x15")
     local exit_sequence = job.entry.exit_sequence
     if exit_sequence then
       for _, keys in ipairs(exit_sequence) do
@@ -166,6 +169,12 @@ M.quickfail = function(entry)
       end
     end
     vim.api.nvim_chan_send(job.chan, "clear\n" .. cmd_str .. "\n")
+
+    -- Scroll terminal window to the bottom so output is followed
+    if vim.api.nvim_win_is_valid(job.window) then
+      local last_line = vim.api.nvim_buf_line_count(job.buffer)
+      vim.api.nvim_win_set_cursor(job.window, { last_line, 0 })
+    end
   end
 
   -- TODO: add oneshot jobs
