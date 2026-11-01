@@ -81,6 +81,23 @@ M.check_jobs = function()
   end
 end
 
+---Delete a job's autocmd and terminal buffer and forget the job
+---@param job Job
+local stop_job = function(job)
+  if job.autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, job.autocmd_id)
+    job.autocmd_id = nil
+  end
+  if vim.api.nvim_buf_is_valid(job.buffer) then
+    vim.api.nvim_buf_delete(job.buffer, { force = true })
+  end
+  for i = #M.jobs, 1, -1 do
+    if M.jobs[i] == job then
+      table.remove(M.jobs, i)
+    end
+  end
+end
+
 ---@param entry Entry
 ---@returns nil
 M.quickfail = function(entry)
@@ -106,7 +123,7 @@ M.quickfail = function(entry)
   local prev_window = vim.api.nvim_get_current_win()
   local prev_cursor = vim.api.nvim_win_get_cursor(prev_window)
 
-  vim.cmd("vsplit new")
+  vim.cmd("vnew")
 
   ---@type Job
   local job = {
@@ -179,13 +196,9 @@ M.quickfail = function(entry)
 
   -- TODO: add oneshot jobs
 
-  -- Escape to close the terminal split
-  vim.keymap.set("n", "<q>", function()
-    vim.api.nvim_buf_delete(job.buffer, { force = true })
-    -- TODO: remove job as well
-    if job.autocmd_id then
-      vim.api.nvim_del_autocmd(job.autocmd_id)
-    end
+  -- `q` (in Normal mode) closes the terminal split and stops the job
+  vim.keymap.set("n", "q", function()
+    stop_job(job)
   end, { buffer = job.buffer })
 
   if (entry.keycodes or "") ~= "" then
@@ -258,11 +271,8 @@ end
 ---
 ---@return nil
 function M.quit()
-  for _, job in ipairs(M.jobs) do
-    if job.autocmd_id then
-      vim.api.nvim_del_autocmd(job.autocmd_id)
-    end
-    vim.api.nvim_buf_delete(job.buffer, { force = true })
+  for i = #M.jobs, 1, -1 do
+    stop_job(M.jobs[i])
   end
 end
 
