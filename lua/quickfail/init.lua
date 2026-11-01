@@ -213,7 +213,7 @@ end
 ---
 --- Prompts the user for:
 --- - Command to run (space-separated arguments)
---- - File pattern for auto-run on save (optional, empty for none)
+--- - File pattern for auto-run on save (optional, empty for the default `*`)
 --- - Keyboard shortcut (optional, e.g., "<F13>")
 ---
 --- The command will be executed immediately and set up for future triggers
@@ -223,11 +223,10 @@ end
 function M.manual()
   -- vim.print(args)
   local cmd_str = vim.fn.input("cmd to run")
-  cmd_str = cmd_str:gsub("%s+", " ")
 
   ---@type Entry
   local entry = {
-    cmd = vim.split(cmd_str, "%s+", {}),
+    cmd = vim.split(cmd_str, "%s+", { trimempty = true }),
     pattern = vim.fn.input("Pattern (empty for all): "),
     keycodes = vim.fn.input("Key code e.g. <F13>"),
   }
