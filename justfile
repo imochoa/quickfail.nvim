@@ -19,9 +19,9 @@ setup:
 test-all:
     nvim --headless --noplugin -u "./scripts/init.lua" -c "lua MiniTest.run()"
 
-# Run test from file at `$FILE` environment variable ????
+# Run a single test file
 [group('test')]
-test-file file="./tests/example.lua":
+test-file file="./tests/test_example.lua":
     nvim --headless --noplugin -u "./scripts/init.lua" -c "lua MiniTest.run_file('{{ file }}')"
 
 # Generate documentation with mini.doc
