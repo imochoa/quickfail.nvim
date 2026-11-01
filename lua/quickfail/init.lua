@@ -93,8 +93,9 @@ M.quickfail = function(entry)
     entry.pattern = M.config.defaults.pattern
   end
 
-  -- nil check?
-  entry.subshell = entry.subshell or M.config.defaults.subshell
+  if entry.subshell == nil then
+    entry.subshell = M.config.defaults.subshell
+  end
 
   vim.notify(
     string.format("Will \n\tRunning:%s\n\ton Saving %s\n\tor pressing %s", entry.cmd, entry.pattern, entry.keycodes),
