@@ -14,11 +14,13 @@ local amp_concat = function(cmds)
   end
 
   local full_cmd = {}
-  for _, cmd_part in ipairs(cmds) do
+  for i, cmd_part in ipairs(cmds) do
+    if i > 1 then
+      table.insert(full_cmd, "&&")
+    end
     for _, c in ipairs(cmd_part) do
       table.insert(full_cmd, c)
     end
-    table.insert(full_cmd, "&&")
   end
   return full_cmd
 end
