@@ -148,13 +148,8 @@ M.quickfail = function(entry)
       cmd = utils.expand_cmd(entry.cmd)
     end
 
-    local cmd_str = ""
-    for _, c in ipairs(cmd) do
-      cmd_str = cmd_str .. vim.fn.expand(c) .. " "
-    end
-
-    vim.print(entry.cmd)
-    -- local cmd_str = utils.expand_cmd(entry.cmd)
+    -- arguments are already expanded (and escaped) once; do not expand again
+    local cmd_str = table.concat(cmd, " ")
     if job.entry.subshell or false then
       cmd_str = "( " .. cmd_str .. " )"
     end

@@ -3,12 +3,20 @@ local M = {}
 ---@require "quickfail.types"
 
 --- Expand special symbols ~, %, %:p AND env vars!
+---
+--- Arguments that expand a file name (`%`, `%:p`, `#`, `<cfile>`, ...) are
+--- shell-escaped, so names with spaces or shell metacharacters stay one
+--- argument. Other words (`&&`, `|`, `;`, `>out`, ...) are left untouched.
 ---@param cmd string[]
 ---@returns string[]
 M.expand_cmd = function(cmd)
   local out = {}
   for _, c in ipairs(cmd) do
-    table.insert(out, vim.fn.expand(c))
+    local expanded = vim.fn.expand(c)
+    if c:match("^[%%#<]") and expanded ~= "" then
+      expanded = vim.fn.shellescape(expanded)
+    end
+    table.insert(out, expanded)
   end
   return out
 end
