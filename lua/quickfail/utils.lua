@@ -44,6 +44,12 @@ M.table_append = function(t1, t2)
   return t1
 end
 
+--- Run the selected entry (required lazily: `quickfail` itself requires this module)
+---@param entry Entry
+local run_entry = function(entry)
+  require("quickfail").quickfail(entry)
+end
+
 ---@param menu_items any
 ---@returns nil
 local fallback_menu = function(menu_items)
@@ -60,11 +66,10 @@ local fallback_menu = function(menu_items)
   end
 
   vim.ui.select(display, { prompt = "Choose:" }, function(choice)
-    print("selected:", choice)
     if not choice then
       return
     end
-    M.quickfail(choice2entry[choice])
+    run_entry(choice2entry[choice])
   end)
 end
 
@@ -79,7 +84,7 @@ local snacks_preview_basic = function(ctx)
 
   if type(entry.cmd) == "function" then
     -- or table.concat(M.expand_cmd(ctx.item.entry.cmd or {}), " "),
-    cmd_preview = entry.cmd()
+    cmd_preview = table.concat(entry.cmd() or {}, " ")
   else
     cmd_preview = table.concat(entry.cmd or {}, " ")
     -- or table.concat(M.expand_cmd(ctx.item.entry.cmd or {}), " "),
@@ -199,7 +204,7 @@ local snacks_menu = function(menu_items)
     preview = snacks_preview_basic,
     confirm = function(picker, item)
       picker:close()
-      M.quickfail(item.entry)
+      run_entry(item.entry)
     end,
   })
 
