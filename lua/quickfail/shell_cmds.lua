@@ -37,7 +37,9 @@ local ext_check = function(ext, allowed_extensions)
   return false
 end
 
----You will need to call expand_cmd/vim.fn.expand yourself
+---Functions skip expand_cmd: call it (or vim.fn.expand) yourself, and wrap any
+---file name you splice in with vim.fn.shellescape so names with spaces or shell
+---metacharacters stay one argument.
 ---@type {[string]: fcnCmd}
 M.functions = {
   -- utils.table_append(cmd, utils.expand_cmd({ "echo", "%:p" }))
@@ -51,7 +53,7 @@ M.functions = {
       return {}
     end
 
-    local service_name = vim.fn.expand("%:t:r") .. ".service"
+    local service_name = vim.fn.shellescape(vim.fn.expand("%:t:r") .. ".service")
 
     return amp_concat({
       { "systemctl", "--user", "daemon-reload" },
